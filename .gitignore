@@ -6,8 +6,7 @@
 octave-workspace
 
 
-
-
+.idea/
 
 __pycache__/
 *.py[cod]
