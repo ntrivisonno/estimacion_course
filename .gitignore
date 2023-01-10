@@ -1,4 +1,14 @@
 # Byte-compiled / optimized / DLL files
+# *.*~ avoid security copies of emacs
+
+# avoid others
+*.*~
+octave-workspace
+
+
+
+
+
 __pycache__/
 *.py[cod]
 *$py.class
