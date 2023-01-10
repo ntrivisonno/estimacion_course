@@ -45,19 +45,6 @@ measurements_constraints = []
 measurements_constraints_lb = []
 measurements_constraints_ub = []
 
-optimization_variables_lb = []
-optimization_variables_ub = []
-
-x_lb = -cs.DM.inf(Nx)
-x_ub = cs.DM.inf(Nx)
-v_lb = -cs.DM.inf(Nv)
-v_ub = cs.DM.inf(Nv)
-w_lb = -cs.DM.inf(Nw)
-w_ub = cs.DM.inf(Nw)
-
-optimization_variables_lb = [x_lb, v_lb, w_lb]
-optimization_variables_ub = [x_ub, v_ub, w_ub]
-
 J = 0.0
 # Definition of the objetive function for optimization
 J += cs.mtimes([(opt_var['x',0]-opt_par['x0bar']).T, P_mhe, (opt_var['x',0]-opt_par['x0bar'])])
