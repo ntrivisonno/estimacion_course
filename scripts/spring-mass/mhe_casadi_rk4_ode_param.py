@@ -49,16 +49,6 @@ measurements_constraints_ub = []
 optimization_variables_lb = []
 optimization_variables_ub = []
 
-x_lb = -cs.DM.inf(Nx)
-x_ub = cs.DM.inf(Nx)
-v_lb = -cs.DM.inf(Nv)
-v_ub = cs.DM.inf(Nv)
-w_lb = -cs.DM.inf(Nw)
-w_ub = cs.DM.inf(Nw)
-
-optimization_variables_lb = [x_lb, v_lb, w_lb]
-optimization_variables_ub = [x_ub, v_ub, w_ub]
-
 J = 0.0
 # Definition of the objetive function for optimization
 J += cs.mtimes([(opt_var['x',0]-opt_par['x0bar']).T, P_mhe, (opt_var['x',0]-opt_par['x0bar'])])
@@ -163,7 +153,6 @@ nlp_constraints = states_constraints + measurements_constraints
 #-------------------------------------------
 #                 NLP
 #-------------------------------------------
-
 # Create an NLP solver
 prob = {'f': J,
         'x': opt_var,
@@ -219,7 +208,7 @@ for i in range(N,Nsim):
     x_estimated[:,i] = curr_sol['x', N-1]
     p_estimated[:,i] = curr_sol['p']
     #x_estimated[:Nx,i] = curr_sol['x', N-1]
-    #x_estimated[Nx:Np,i] = curr_sol['p', N-1]
+    #x_estimated[Nx:Np,i] = curr_sol['p']
 
     current_x0bar = x_estimated[:, i-N+2]
 
@@ -252,6 +241,16 @@ plt.legend()
 plt.subplot(212)
 plt.plot(err, label="$\epsilon_{\hat{x_0}}$")
 plt.title('Error')
+plt.legend()
+
+plt.figure(4)
+plt.subplot(211)
+plt.plot(p_estimated[0,:].toarray().flatten(), label='$\hat{p_{[1]}}$')
+plt.title('Estimation p[0] - k')
+plt.legend()
+plt.subplot(212)
+plt.plot(p_estimated[1,:].toarray().flatten(), label='$\hat{p_{[1]}}$')
+plt.title('Estimation p[1] - c')
 plt.legend()
 
 plt.show()
