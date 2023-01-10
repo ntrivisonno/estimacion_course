@@ -197,10 +197,12 @@ sol = solver(x0=initialization_state,
              lbg=0, ubg=0, p = curr_par)
 
 x_estimated = cs.DM.zeros(Nx, Nsim)
-#x_estimated = cs.DM.zeros(Nx+Np, Nsim)
+#p_estimated = cs.DM.zeros(Np, round(Nsim/N))
+p_estimated = cs.DM.zeros(Np, Nsim)
 
 curr_sol = opt_var(sol['x']) # Generates an struct call current_solution similar as struct opt_var, and also assign the solution of the mhe windows
 x_estimated[:,:N] = curr_sol['x', lambda __x: cs.horzcat(*__x)]
+p_estimated[:,0] = curr_sol['p']
 
 # MHE windows, starts rolling
 current_x0bar = x_estimated[:, 1]
@@ -215,6 +217,7 @@ for i in range(N,Nsim):
     
     curr_sol = opt_var(sol['x'])
     x_estimated[:,i] = curr_sol['x', N-1]
+    p_estimated[:,i] = curr_sol['p']
     #x_estimated[:Nx,i] = curr_sol['x', N-1]
     #x_estimated[Nx:Np,i] = curr_sol['p', N-1]
 
