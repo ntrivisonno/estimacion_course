@@ -27,6 +27,7 @@ Ts = 0.1  # Sampling time, should match the sampling of the generated data.
 Nsim = y_sim.shape[0]  # Total batch length
 
 x0 = cs.DM([-2.0, 0.0])  # Initial state
+p0 = cs.DM([0.5, 1.0])   # Initial estimation parameters
 
 # Optimizer variables
 opt_var = ctools.struct_symSX([ctools.entry('x', shape = (Nx, 1), repeat = N),
@@ -134,7 +135,7 @@ initialization_state = opt_var(0) # Generates states identical as struct opt_var
 
 # Current parameters
 curr_par['x0bar'] = x0
-curr_par['p0bar'] = cs.DM([0.5, 1.0])
+curr_par['p0bar'] = p0
 curr_par['y', lambda __x: cs.horzcat(*__x)] = y_sim[0:N]
 curr_par['u', lambda __x: cs.horzcat(*__x)] = u_sim[0:N-1]
 
@@ -182,6 +183,14 @@ for i in range(N,Nsim):
 # calc error posicion
 err = x_estimated[0,:] - y_sim[:,np.newaxis].T
 err = err.T
+err_abs = cs.fabs(err)
+
+print('#--------------------------------------------')
+print("N_windows: {}".format(N))
+print("x0: {}".format(x0))
+print("p0: {}".format(p0))
+print("p[0]_hat: {} -> p_original: 2.0 -> err rel: {}%".format(p_estimated[0,-1],((p_estimated[0,-1]-2.0)/2.0)*100))
+print("p[1]_hat: {} -> p_original: 4.0 -> err rel: {}%".format(p_estimated[1,-1],((p_estimated[1,-1]-4.0)/4.0)*100))
 
 print('#--------------------------------------------')
 print('\n FIN, OK!')
@@ -198,6 +207,7 @@ plt.plot(x_estimated[0,:].toarray().flatten(), label='$\hat{x}_0$')
 plt.plot(x_estimated[1,:].toarray().flatten(), label='$\hat{x}_1$')
 plt.title('Spring-Mass Numerical Simulator')
 plt.legend()
+plt.grid()
 
 plt.figure(3)
 plt.subplot(211)
@@ -205,14 +215,17 @@ plt.plot(y_sim, marker="+",label="$\overline{y}$")
 plt.plot(x_estimated[0,:].toarray().flatten(), label='$\hat{x}_0$')
 plt.title('Spring-Mass system')
 plt.legend()
+plt.grid()
 plt.subplot(212)
-plt.plot(err, label="$\epsilon_{\hat{x_0}}$")
+plt.plot(cs.fabs(err), label="$\epsilon_{\hat{x_0}}$")
 plt.title('Error')
+plt.ylabel('$|\epsilon|$')
 plt.legend()
+plt.grid()
 
 plt.figure(4)
 plt.subplot(211)
-plt.plot(p_estimated[0,:].toarray().flatten(), label='$\hat{p_{[1]}}$')
+plt.plot(p_estimated[0,:].toarray().flatten(), label='$\hat{p_{[0]}}$')
 plt.title('Estimation p[0] - k')
 plt.legend()
 plt.grid()
