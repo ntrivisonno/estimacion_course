@@ -1,40 +1,47 @@
 # MHE with an ODE for the Dynamic System - estimating physics parameters
 # ODE as return argument of casadi function
 """
-
 @author: ntrivisonno
 """
 
 import casadi as cs
 import casadi.tools as ctools
 import numpy as np
-#from OOP.src import utils
 import matplotlib.pyplot as plt
 
-y_sim = np.loadtxt("/home/zeeburg/Documents/CIMEC/Cursos/estimacion_course/scripts/spring-mass/mediciones/y_medido_20220929.txt")
-u_sim = np.loadtxt("/home/zeeburg/Documents/CIMEC/Cursos/estimacion_course/scripts/spring-mass/mediciones/u_20220929.txt")
+y_sim = np.loadtxt("./mediciones/y_sim.txt")
+u_sim = np.loadtxt("./mediciones/u_sim.txt")
+x_sim = np.loadtxt("./mediciones//x_sim.txt")
 
 Nx = 2
 Nw = Nx
 Nu = 1
 Ny = 1
 Nv = Ny
-N = 5 # Horizon Windows
-Ts = 0.1 # Sampling time
-Nsim = 600 # Total batch length
-#x0 = cs.DM([-2.0, 0.0, 0.0, 0.0]) # Initial state
-x0 = cs.DM([-2.0, 0.0])
+Np = 2
 
-Np = 2 # number param
+N = 5  # Horizon window length
+
+Ts = 0.1  # Sampling time, should match the sampling of the generated data.
+
+Nsim = y_sim.shape[0]  # Total batch length
+
+x0 = cs.DM([-2.0, 0.0])  # Initial state
+
+# Optimizer variables
 opt_var = ctools.struct_symSX([ctools.entry('x', shape = (Nx, 1), repeat = N),
                                ctools.entry('v', shape = (Nv, 1), repeat = N),
                                ctools.entry('w', shape = (Nw, 1), repeat = N-1),
                                ctools.entry('p', shape = (Np, 1))])
+
+# Optimizer parameters
 opt_par = ctools.struct_symSX([ctools.entry('x0bar', shape = (Nx, 1)),
+                               ctools.entry('p0bar', shape = (Np, 1)),
                                ctools.entry('y', shape = (Ny, 1), repeat = N),
                                ctools.entry('u', shape = (Nu, 1), repeat = N-1)])
 
-P_mhe = cs.DM.eye(Nx) # Arrival Cost weighting matrix
+P_mhe_x0 = cs.DM.eye(Nx) # Arrival Cost weighting matrix [x0bar]
+P_mhe_p0 = cs.DM.eye(Nx) * 2E-4 # Arrival Cost weighting matrix [p0bar]
 Q_mhe = cs.DM.eye(Nw) # Process Weighting matrix
 R_mhe = cs.DM.eye(Nv) # Measurements Weighting matrix
 
@@ -49,9 +56,10 @@ measurements_constraints_ub = []
 optimization_variables_lb = []
 optimization_variables_ub = []
 
-J = 0.0
 # Definition of the objetive function for optimization
-J += cs.mtimes([(opt_var['x',0]-opt_par['x0bar']).T, P_mhe, (opt_var['x',0]-opt_par['x0bar'])])
+J = 0.0
+J += cs.mtimes([(opt_var['x',0]-opt_par['x0bar']).T, P_mhe_x0, (opt_var['x',0]-opt_par['x0bar'])])
+J += cs.mtimes([(opt_var['p']-opt_par['p0bar']).T, P_mhe_p0, (opt_var['p']-opt_par['p0bar'])])
 
 for _k in range(N-1):
     J += cs.mtimes([opt_var['v', _k].T, R_mhe, opt_var['v', _k]])
@@ -60,68 +68,29 @@ for _k in range(N-1):
 # Next iteration out of the for-loop, _k = N-1
 J += cs.mtimes([opt_var['v', N-1].T, R_mhe, opt_var['v', N-1]])
 
-# Symbolic variables definition for the optimization problem
+
+# Symbolic variables definition for the RK4 function
 x = cs.SX.sym('x',Nx)
 v = cs.SX.sym('v',Nv)
 w = cs.SX.sym('w',Nw)
 u = cs.SX.sym('u',Nu)
 y = cs.SX.sym('y',Ny)
-# physics parameters
-#k = cs.SX.sym('k',1)
-#c = cs.SX.sym('c',1)
 p = cs.SX.sym('p', Np)
-#p = [k, c]
-#p = cs.vertcat(k, c) # tmb se puede usar: p = cs.XS.sym('p', Np)
 
 # Spring-Mass system
-m = 20.0 # Mass
-'''
-c = 4.0  # Damping constant
-k = 2.0  # Stiffness of the spring
+m = 20.0  # Mass
 
-A = np.array([[0.0, 1.0], [-k / m, -c / m]])
-B = np.array([[0.0], [1.0 / m]])
-C = np.array([1, 0])
-D = 0
-'''
-#------------------------------------------
-# Dynamics System - ODE
-#f_ode = [cs.mtimes(A, x) + cs.mtimes(B, u)]
-
-#f_ode = cs.vertcat(*f_ode)
+# Dynamic System - ODE for estimating physical states and parameters
+f_rhs = cs.vertcat(x[1], - p[0]/m * x[0] - p[1]/m * x[1] + 1/m * u)
+f = cs.Function('f', [x, u, p], [f_rhs])
 
 # Observation equation
 h_rhs = [x[0]]
-
 h_rhs = cs.vertcat(*h_rhs)
-#------------------------------------------
-
-#------------------------------------------
-# Dynamics System - ODE for estimating physical parameters
-#def f_ode(x,u,k,c):
-'''
-def f_ode(x, u, k, c, m):
-    #return[x[1], - p[0]/m * x[0] - p[1]/m * x[1] + 1/m * u]
-    vel = x[1]
-    acc = - k / m * x[0] - c / m * x[1] + 1 / m * u[0]
-    kk = [vel, acc]
-    ss = cs.vertcat(*kk)
-    return ss
-'''
-
-#------------------------------------------
-# new after consulta
-rhs = cs.vertcat(x[1], - p[0]/m * x[0] - p[1]/m * x[1] + 1/m * u)
-
-f = cs.Function('f', [x, u, p], [rhs])
-#------------------------------------------
-
-#f = cs.Function('f',[x, u], [f_ode])
-#f = cs.Function('f', [x,u, p], cs.vertcat(*[x[0], - p[0] / m * x[0] - p[1] / m * x[1] + 1 / m * u]))
 
 # Dynamics discretization
 # Fixed step RK4 integrator
-M = 4 # RK4 steps per interval
+M = 4  # RK4 steps per interval
 for j in range(1, M):
     k1 = f(x, u, p)
     k2 = f(x + Ts / 2 * k1, u, p)
@@ -148,7 +117,7 @@ states_constraints_lb += [cs.DM.zeros(Nx)]
 states_constraints_ub += [cs.DM.zeros(Nx)]
 
 nlp_constraints = states_constraints + measurements_constraints
-#nlp_constraints = cs.vertcat(*nlp_constraints)
+nlp_constraints = cs.vertcat(*nlp_constraints)
 
 #-------------------------------------------
 #                 NLP
@@ -156,7 +125,7 @@ nlp_constraints = states_constraints + measurements_constraints
 # Create an NLP solver
 prob = {'f': J,
         'x': opt_var,
-        'g': cs.vertcat(*nlp_constraints),
+        'g': nlp_constraints,
         'p': opt_par}
 solver = cs.nlpsol('solver', 'ipopt', prob)
 
@@ -165,40 +134,39 @@ initialization_state = opt_var(0) # Generates states identical as struct opt_var
 
 # Current parameters
 curr_par['x0bar'] = x0
+curr_par['p0bar'] = cs.DM([0.5, 1.0])
 curr_par['y', lambda __x: cs.horzcat(*__x)] = y_sim[0:N]
 curr_par['u', lambda __x: cs.horzcat(*__x)] = u_sim[0:N-1]
 
-
-optimization_variables_lb = opt_var(-100)
-optimization_variables_ub = opt_var(100)
-# working
-#optimization_variables_lb = opt_var(-cs.inf)
-#optimization_variables_ub = opt_var(cs.inf)
-# if want different bounds of each struct:
-#optimization_variables_lb['x', lambda __x: cs.horzcat(*__x)] = np.array([[8, 8, 8, 8, 8], [8, 8, 8, 8, 8]])
-#optimization_variables_lb['v', lambda __x: cs.horzcat(*__x)] = np.array([[3, 3, 3, 3, 3]])
-#optimization_variables_lb['w', lambda __x: cs.horzcat(*__x)] = np.array([[9, 9, 9, 9], [9, 9, 9, 9]])
+optimization_variables_lb = opt_var(-cs.inf)
+optimization_variables_lb['p'] = cs.DM([0.0, 0.0])
+optimization_variables_ub = opt_var(cs.inf)
+# optimization_variables_ub['p'] = cs.DM([10.0, 10.0])
 
 #-------------------------------------------
 # Solve the NLP
 sol = solver(x0=initialization_state,
-             lbx = optimization_variables_lb, ubx = optimization_variables_ub, 
-             lbg=0, ubg=0, p = curr_par)
+             lbx=optimization_variables_lb, ubx=optimization_variables_ub,
+             lbg=0, ubg=0, p=curr_par)
 
 x_estimated = cs.DM.zeros(Nx, Nsim)
-#p_estimated = cs.DM.zeros(Np, round(Nsim/N))
 p_estimated = cs.DM.zeros(Np, Nsim)
 
-curr_sol = opt_var(sol['x']) # Generates an struct call current_solution similar as struct opt_var, and also assign the solution of the mhe windows
+curr_sol = opt_var(sol['x'])  # Generates an struct call current_solution similar as struct opt_var, and also assign the solution of the mhe windows
 x_estimated[:,:N] = curr_sol['x', lambda __x: cs.horzcat(*__x)]
 p_estimated[:,0] = curr_sol['p']
 
 # MHE windows, starts rolling
 current_x0bar = x_estimated[:, 1]
+current_p0bar = p_estimated[:, 1]
+current_measurements = y_sim[:N]
+current_inputs = u_sim[:N - 1]
+
 for i in range(N,Nsim):
     curr_par['x0bar'] = current_x0bar
-    curr_par['y', lambda __x: cs.horzcat(*__x)] = y_sim[i-N:i]
-    curr_par['u', lambda __x: cs.horzcat(*__x)] = u_sim[i-N:i-1]
+    curr_par['p0bar'] = current_p0bar
+    curr_par['y', lambda __x: cs.horzcat(*__x)] = y_sim[i - N:i]
+    curr_par['u', lambda __x: cs.horzcat(*__x)] = u_sim[i - N:i - 1]
 
     sol = solver(x0 = sol['x'],
                  lbx = optimization_variables_lb, ubx = optimization_variables_ub, 
@@ -207,13 +175,12 @@ for i in range(N,Nsim):
     curr_sol = opt_var(sol['x'])
     x_estimated[:,i] = curr_sol['x', N-1]
     p_estimated[:,i] = curr_sol['p']
-    #x_estimated[:Nx,i] = curr_sol['x', N-1]
-    #x_estimated[Nx:Np,i] = curr_sol['p']
 
-    current_x0bar = x_estimated[:, i-N+2]
+    current_x0bar = curr_sol['x', 1]
+    current_p0bar = curr_sol['p']
 
 # calc error posicion
-err = x_estimated[0,:] - y_sim[:-1,np.newaxis].T
+err = x_estimated[0,:] - y_sim[:,np.newaxis].T
 err = err.T
 
 print('#--------------------------------------------')
@@ -248,9 +215,11 @@ plt.subplot(211)
 plt.plot(p_estimated[0,:].toarray().flatten(), label='$\hat{p_{[1]}}$')
 plt.title('Estimation p[0] - k')
 plt.legend()
+plt.grid()
 plt.subplot(212)
 plt.plot(p_estimated[1,:].toarray().flatten(), label='$\hat{p_{[1]}}$')
 plt.title('Estimation p[1] - c')
 plt.legend()
+plt.grid()
 
 plt.show()
