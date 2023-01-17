@@ -42,7 +42,7 @@ opt_par = ctools.struct_symSX([ctools.entry('x0bar', shape = (Nx, 1)),
                                ctools.entry('u', shape = (Nu, 1), repeat = N-1)])
 
 P_mhe_x0 = cs.DM.eye(Nx) # Arrival Cost weighting matrix [x0bar]
-P_mhe_p0 = cs.DM.eye(Nx) * 2E-4 # Arrival Cost weighting matrix [p0bar]
+P_mhe_p0 = cs.DM.eye(Np) * 2E-4 # Arrival Cost weighting matrix [p0bar]
 Q_mhe = cs.DM.eye(Nw) # Process Weighting matrix
 R_mhe = cs.DM.eye(Nv) # Measurements Weighting matrix
 
