@@ -69,10 +69,22 @@ for i in range(Nsim):
     ysim[i] = h(xsim[i])
     xsim[i+1] = np.array(F_RK4(xsim[i], usim[i], psim)).ravel()
 
+add_noise = True
+if add_noise:
+    n_mean = 0.0
+    n_std = 0.05
+else:
+    n_mean = 0.0
+    n_std = 0.0
+noise = np.random.normal(n_mean, n_std, xsim.shape[0])
+xsim_noise = xsim[:,0] + noise
+
+
 
 plt.figure()
 plt.plot(xsim[:, 0], label="${x_0}$")
 plt.plot(xsim[:, 1], label="${x_1}$")
+plt.plot(xsim_noise, label="${x_0 noise}$")
 plt.grid()
 plt.legend()
 plt.show()
@@ -80,3 +92,4 @@ plt.show()
 np.savetxt('y_sim.txt', ysim)
 np.savetxt('u_sim.txt', usim)
 np.savetxt('x_sim.txt', xsim)
+np.savetxt('x_sim_noise.txt', xsim_noise)

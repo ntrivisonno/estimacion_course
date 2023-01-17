@@ -7,6 +7,7 @@ octave-workspace
 /scripts/spring-mass/mediciones/u_sim.txt
 /scripts/spring-mass/mediciones/y_sim.txt
 /scripts/spring-mass/mediciones/x_sim.txt
+/scripts/spring-mass/mediciones/x_sim_noise.txt
 .idea/
 
 __pycache__/

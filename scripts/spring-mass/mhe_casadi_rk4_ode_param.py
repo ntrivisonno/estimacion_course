@@ -9,7 +9,8 @@ import casadi.tools as ctools
 import numpy as np
 import matplotlib.pyplot as plt
 
-y_sim = np.loadtxt("./mediciones/y_sim.txt")
+#y_sim = np.loadtxt("./mediciones/y_sim.txt")
+y_sim = np.loadtxt("./mediciones/x_sim_noise.txt")
 u_sim = np.loadtxt("./mediciones/u_sim.txt")
 x_sim = np.loadtxt("./mediciones//x_sim.txt")
 
