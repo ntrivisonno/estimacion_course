@@ -29,8 +29,8 @@ y = cs.SX.sym('y', Ny)
 p = cs.SX.sym('p', Np)
 
 # Spring-Mass system
-c = 4.0  # Damping constant
 k = 2.0  # Stiffness of the spring
+c = 4.0  # Damping constant
 m = 20.0  # Mass
 
 # p = cs.vertcat(k, c)

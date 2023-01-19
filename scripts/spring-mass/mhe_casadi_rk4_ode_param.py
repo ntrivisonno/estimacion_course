@@ -21,7 +21,7 @@ Ny = 1
 Nv = Ny
 Np = 2
 
-N = 5  # Horizon window length
+N = 10  # Horizon window length
 
 Ts = 0.1  # Sampling time, should match the sampling of the generated data.
 
@@ -43,7 +43,8 @@ opt_par = ctools.struct_symSX([ctools.entry('x0bar', shape = (Nx, 1)),
                                ctools.entry('u', shape = (Nu, 1), repeat = N-1)])
 
 P_mhe_x0 = cs.DM.eye(Nx) # Arrival Cost weighting matrix [x0bar]
-P_mhe_p0 = cs.DM.eye(Np) * 2E-4 # Arrival Cost weighting matrix [p0bar]
+#P_mhe_p0 = cs.DM.eye(Np) * 2E-4 # Arrival Cost weighting matrix [p0bar]
+P_mhe_p0 = cs.DM([[2e-2, 0.0],[0.0, 2.8e-3]])
 Q_mhe = cs.DM.eye(Nw) # Process Weighting matrix
 R_mhe = cs.DM.eye(Nv) # Measurements Weighting matrix
 
@@ -182,6 +183,14 @@ for i in range(N,Nsim):
     current_p0bar = curr_sol['p']
 
 # calc error posicion
+p0_hat = np.mean(p_estimated[0,int(Nsim-Nsim/3):-1])
+p1_hat = np.mean(p_estimated[1,int(Nsim-Nsim/3):-1])
+dstd_p0 = np.std(p_estimated[0,int(Nsim-Nsim/3):-1])
+dstd_p1 = np.std(p_estimated[1,int(Nsim-Nsim/3):-1])
+ 
+err_p0_hat = ((p0_hat-2.0)/2.0)*100
+err_p1_hat = ((p1_hat-4.0)/4.0)*100
+
 err = x_estimated[0,:] - y_sim[:,np.newaxis].T
 err = err.T
 err_abs = cs.fabs(err)
@@ -190,8 +199,9 @@ print('#--------------------------------------------')
 print("N_windows: {}".format(N))
 print("x0: {}".format(x0))
 print("p0: {}".format(p0))
-print("p[0]_hat: {} -> p_original: 2.0 -> err rel: {}%".format(p_estimated[0,-1],((p_estimated[0,-1]-2.0)/2.0)*100))
-print("p[1]_hat: {} -> p_original: 4.0 -> err rel: {}%".format(p_estimated[1,-1],((p_estimated[1,-1]-4.0)/4.0)*100))
+print("p[0]_hat: {:.4f}, sigma:+-{:.4f} -> p_orig: 2.0 -> err rel: {:.4f}%".format(p0_hat, dstd_p0, err_p0_hat))
+print("p[1]_hat: {:.4f}, sigma:+-{:.4f} -> p_orig: 4.0 -> err rel: {:.4f}%".format(p1_hat, dstd_p1, err_p1_hat))
+
 
 print('#--------------------------------------------')
 print('\n FIN, OK!')
