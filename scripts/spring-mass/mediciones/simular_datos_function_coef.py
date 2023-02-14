@@ -12,13 +12,17 @@ Nv = Ny
 Np = 2
 
 # Sampling time
-#Ts = 0.05
-Ts = 0.025
+#Ts = 0.1 
+#Now it's calculated by the domain refinement
 
 # Total batch length
-#Nsim = 1200
-Nsim = 2400
+#Nsim = 600
+Nref = 2 # Refinements
+Na = 2**Nref
+Nsim = Na*600
 
+# Sampling time
+Ts = 0.1/Na
 
 # Initial state
 x0 = cs.DM([-2.0, 0.0])
