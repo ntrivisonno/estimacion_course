@@ -24,14 +24,15 @@ Ny = 1
 Nv = Ny
 Np = 2
 
+N = [30]
 #N = [20, 30]  # Horizon window length
-N = range(20, 40, 5)
+#N = range(20, 40, 5)
 
 #Ts = 0.1  # Sampling time, should match the sampling of the generated data.
 # Time as domain refinement Approach
 Nref = 2
-N = 2**Nref
-Ts = 0.1/N
+Na = 2**Nref
+Ts = 0.1/Na
 
 Nsim = y_sim.shape[0]  # Total batch length
 
@@ -299,7 +300,7 @@ plt.grid()
 
 plt.figure(3)
 plt.subplot(211)
-plt.plot(y_sim, marker="+",label="$\overline{y}$")
+plt.plot(y_sim, label="$\overline{y}$")
 plt.legend()
 plt.grid()
 
