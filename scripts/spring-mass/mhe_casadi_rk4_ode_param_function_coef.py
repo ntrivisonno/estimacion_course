@@ -1,4 +1,4 @@
-# MHE with an ODE for the Dynamic System - estimating physics parameters
+# MHE with an ODE for the Dynamic System - estimating physics parameters - Vectorized version
 # ODE as return argument of casadi function
 """
 @author: ntrivisonno
@@ -8,6 +8,7 @@ import casadi as cs
 import casadi.tools as ctools
 import numpy as np
 import matplotlib.pyplot as plt
+eps = np.finfo(float).eps
 
 #y_sim = np.loadtxt("./mediciones/y_sim.txt")
 y_sim = np.loadtxt("./mediciones/x_sim_noise.txt")
@@ -17,6 +18,15 @@ coef = np.loadtxt("./mediciones/coef.txt")
 k_orig = coef[:,0]
 c_orig = coef[:,1]
 
+# Inertial forces
+Fres_orig = k_orig*x_sim[:-1,0]
+Fvis_orig = c_orig*x_sim[:-1,1]
+Fcont_orig = u_sim
+
+Finer_orig = Fres_orig + Fvis_orig + Fcont_orig
+m = 20.0 # should match with simular_datos
+acel_orig = Finer_orig/m
+
 Nx = 2
 Nw = Nx
 Nu = 1
@@ -24,8 +34,8 @@ Ny = 1
 Nv = Ny
 Np = 2
 
-N = [30]
-#N = [20, 30]  # Horizon window length
+#N = [30]
+N = [20, 30]  # Horizon window length
 #N = range(20, 40, 5)
 
 #Ts = 0.1  # Sampling time, should match the sampling of the generated data.
@@ -225,6 +235,14 @@ for _n in range(len(N)):
     err_coef_rel[0,:] = ((err_coef[0,:])/(k_orig[:]+eps))*100
     err_coef_rel[1,:] = ((err_coef[1,:])/(c_orig[:]+eps))*100
 
+    # Computing Forces, Estimated Values
+    Fres_hat = p_estimated[0,:].toarray().flatten()*x_sim[:-1,0]
+    Fvis_hat = p_estimated[1,:].toarray().flatten()*x_sim[:-1,1]
+    Fcont_hat = u_sim
+
+    # Inertial forces
+    Finer_hat = Fres_hat + Fvis_hat + Fcont_hat
+    acel_hat = Finer_hat/m
 
     print('#--------------------------------------------')
     print("N_windows: {}".format(N[_n]))
@@ -291,6 +309,38 @@ for _n in range(len(N)):
     plt.legend()
     plt.grid()
 
+    # Inertial Force
+    plt.figure(5)
+    plt.subplot(311)
+    #plt.plot(Finer_orig, label='$F_{iner}$')
+    plt.plot(Finer_hat, label='$\hat{F_{iner}} N=$'+str(N[_n]))
+    plt.legend()
+    plt.title('Inertial Force')
+    # Estimation Error
+    plt.subplot(312)
+    err = Finer_orig - Finer_hat
+    plt.plot(err, label='Err N='+str(N[_n]))
+    plt.title('Error Abs')
+    plt.legend()
+    plt.subplot(313)
+    err_rel = ((Finer_orig - Finer_hat)/(Finer_orig+eps))*100
+    plt.plot(err_rel, label='Err rel N='+str(N[_n]))
+    plt.title('Error Relativo %')
+    plt.legend()
+
+    # Forces segregated
+    plt.figure(6)
+    plt.subplot(411)
+    plt.plot(Finer_hat, label='$F_{iner}$ N='+str(N[_n]))
+    plt.subplot(412)
+    plt.plot(Fvis_hat, label='$F_{vis}$ N='+str(N[_n]))
+    plt.subplot(413)
+    plt.plot(Fcont_hat, label='$F_{con}$ N='+str(N[_n]))
+    plt.subplot(414)
+    plt.plot(Fres_hat, label='$F_{res}$ N='+str(N[_n]))
+    plt.legend()
+    plt.grid()
+
 
 # Ploting original values
 plt.figure(2)
@@ -313,5 +363,33 @@ plt.subplot(223)
 plt.plot(c_orig, label = 'c')
 plt.legend()
 plt.grid()
+
+plt.figure(5)
+plt.subplot(311)
+plt.plot(Finer_orig, label='$F_{iner}$ Original')
+plt.legend()
+plt.grid()
+
+plt.figure(6)
+plt.subplot(411)
+plt.plot(Finer_orig, label='$F_{iner}$ orig')
+plt.legend()
+plt.grid()
+plt.title('Fuerzas Inerciales')
+plt.subplot(412)
+plt.plot(Fvis_orig, label='$F_{vis}$ orig')
+plt.legend()
+plt.grid()
+plt.title('Fuerzas Viscosas')
+plt.subplot(413)
+plt.plot(Fcont_orig, label='$F_{con}$ orig')
+plt.legend()
+plt.grid()
+plt.title('Fuerzas Control')
+plt.subplot(414)
+plt.plot(Fres_orig, label='$F_{res}$ orig')
+plt.legend()
+plt.grid()
+plt.title('Fuerzas Rigidez')
 
 plt.show()
